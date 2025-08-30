@@ -1,8 +1,10 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { auth, db } from '@/config/firebaseConfig'
+import { onAuthStateChanged } from 'firebase/auth'
 import { onSnapshot, collection, query, where, orderBy, doc, getDoc } from 'firebase/firestore'
-import { db } from '@/config/firebaseConfig'
+import { formatDistanceToNow } from 'date-fns'
 
 const authStore = useAuthStore()
 const isEditProfileShown = ref(false)
@@ -14,8 +16,8 @@ const userDetailsForm = ref({
     about: '',
 })
 
-// 🔹 posts state
-const posts = ref([])
+const posts = ref([]) // 🔹 posts state
+let unsubscribe = null // cleanup reference
 
 const openEditProfile = () => {
     if (authStore.me) {
@@ -31,24 +33,20 @@ const openEditProfile = () => {
 }
 
 // 🔹 listen to only logged-in user's posts
-function listenToPosts() {
-    if (!authStore.me || !authStore.me.uid) {
-        console.error('No user is logged in.')
-        return
-    }
+async function listenToPosts(uid) {
+    if (!uid) return
 
     const q = query(
         collection(db, 'posts'),
-        where('uid', '==', authStore.me.uid),
+        where('uid', '==', uid),
         orderBy('createdAt', 'desc')
     )
 
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
+    unsubscribe = onSnapshot(q, async (snapshot) => {
         const postPromises = snapshot.docs.map(async (docSnap) => {
             const data = docSnap.data()
             let userData = {}
 
-            // fetch user profile for the post
             if (data.uid) {
                 const userDoc = await getDoc(doc(db, 'users', data.uid))
                 if (userDoc.exists()) {
@@ -65,16 +63,23 @@ function listenToPosts() {
 
         posts.value = await Promise.all(postPromises)
     })
-
-    // cleanup Firestore listener
-    onUnmounted(() => unsubscribe())
 }
 
+// 🔹 wait until Firebase session is restored
 onMounted(() => {
-    listenToPosts()
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            console.log('Logged in user (profile page):', user.uid)
+            listenToPosts(user.uid)
+        } else {
+            console.log('No user logged in (profile page)')
+            posts.value = []
+        }
+    })
 })
 
 onUnmounted(() => {
+    if (unsubscribe) unsubscribe()
     console.log('Bye bye..')
 })
 </script>
@@ -130,7 +135,7 @@ onUnmounted(() => {
             <div><span class="font-medium">Skills:</span> Python, C++, React</div>
         </div>
     </section>
-    <!-- Recent Posts -->
+     <!-- Recent Posts -->
     <section class="bg-white rounded-lg shadow p-6 space-y-6">
         <h3 class="text-lg font-semibold">Recent Posts</h3>
 
@@ -144,7 +149,6 @@ onUnmounted(() => {
             class="border-t pt-4 first:border-t-0 first:pt-0"
         >
             <div class="flex items-start space-x-3">
-                <!-- User avatar -->
                 <img
                     :src="post.user.photoURL || 'https://via.placeholder.com/64'"
                     alt="Avatar"
@@ -154,11 +158,9 @@ onUnmounted(() => {
                 <div class="flex-1">
                     <div class="flex items-center justify-between">
                         <div>
-                            <!-- User name -->
                             <h4 class="font-semibold text-gray-800">
-                                {{ post.user.name || 'Unknown User' }}
+                                {{ post.user.name || post.displayname || 'Unknown User' }}
                             </h4>
-                            <!-- Posted time -->
                             <span class="text-sm text-gray-500">
                                 Posted
                                 {{
@@ -168,58 +170,17 @@ onUnmounted(() => {
                                 }}
                             </span>
                         </div>
-                        <!-- Options button -->
-                        <button class="text-gray-400 hover:text-gray-600">
-                            <svg
-                                class="w-5 h-5"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                viewBox="0 0 24 24"
-                            >
-                                <circle cx="12" cy="12" r="1" />
-                                <circle cx="19" cy="12" r="1" />
-                                <circle cx="5" cy="12" r="1" />
-                            </svg>
-                        </button>
+                        <button class="text-gray-400 hover:text-gray-600">⋮</button>
                     </div>
 
-                    <!-- Post content -->
                     <p class="mt-2 text-gray-700">{{ post.content }}</p>
 
-                    <!-- Example actions (static for now) -->
                     <div class="mt-3 flex space-x-6 text-sm text-gray-600">
                         <button class="flex items-center hover:text-indigo-600">
-                            <svg
-                                class="w-5 h-5 mr-1"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="M14 9l3-3 3 3m0 6l-3 3-3-3M3 12h12"
-                                />
-                            </svg>
-                            {{ post.likes || 0 }} Likes
+                            👍 {{ post.likes || 0 }} Likes
                         </button>
                         <button class="flex items-center hover:text-indigo-600">
-                            <svg
-                                class="w-5 h-5 mr-1"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="M8 10h.01M12 10h.01M16 10h.01M21 16v-5a2 2 0 00-2-2H5a2 2 0 00-2 2v5a2 2 0 002 2h3l4 4 4-4h3a2 2 0 002-2z"
-                                />
-                            </svg>
-                            {{ post.commentsCount || 0 }} Comments
+                            💬 {{ post.commentsCount || 0 }} Comments
                         </button>
                     </div>
                 </div>
