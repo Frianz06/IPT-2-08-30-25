@@ -70,7 +70,9 @@ function listenToPosts() {
     onUnmounted(() => unsubscribe())
 }
 
-
+onMounted(() => {
+    listenToPosts()
+})
 
 onUnmounted(() => {
     console.log('Bye bye..')
@@ -129,14 +131,101 @@ onUnmounted(() => {
         </div>
     </section>
     <!-- Recent Posts -->
-    <section>
-    <h3>Recent Posts</h3>
-    <div v-if="!posts.length">No posts yet.</div>
-    <div v-for="post in posts" :key="post.id">
-      <h4>{{ post.user.name }}</h4>
-      <p>{{ post.content }}</p>
-    </div>
-  </section>
+    <section class="bg-white rounded-lg shadow p-6 space-y-6">
+        <h3 class="text-lg font-semibold">Recent Posts</h3>
+
+        <!-- No posts -->
+        <div v-if="!posts.length" class="text-gray-500">No posts yet.</div>
+
+        <!-- Post items -->
+        <div
+            v-for="post in posts"
+            :key="post.id"
+            class="border-t pt-4 first:border-t-0 first:pt-0"
+        >
+            <div class="flex items-start space-x-3">
+                <!-- User avatar -->
+                <img
+                    :src="post.user.photoURL || 'https://via.placeholder.com/64'"
+                    alt="Avatar"
+                    class="w-10 h-10 rounded-full"
+                />
+
+                <div class="flex-1">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <!-- User name -->
+                            <h4 class="font-semibold text-gray-800">
+                                {{ post.user.name || 'Unknown User' }}
+                            </h4>
+                            <!-- Posted time -->
+                            <span class="text-sm text-gray-500">
+                                Posted
+                                {{
+                                    formatDistanceToNow(post.createdAt?.toDate?.() || new Date(), {
+                                        addSuffix: true,
+                                    })
+                                }}
+                            </span>
+                        </div>
+                        <!-- Options button -->
+                        <button class="text-gray-400 hover:text-gray-600">
+                            <svg
+                                class="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                viewBox="0 0 24 24"
+                            >
+                                <circle cx="12" cy="12" r="1" />
+                                <circle cx="19" cy="12" r="1" />
+                                <circle cx="5" cy="12" r="1" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Post content -->
+                    <p class="mt-2 text-gray-700">{{ post.content }}</p>
+
+                    <!-- Example actions (static for now) -->
+                    <div class="mt-3 flex space-x-6 text-sm text-gray-600">
+                        <button class="flex items-center hover:text-indigo-600">
+                            <svg
+                                class="w-5 h-5 mr-1"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M14 9l3-3 3 3m0 6l-3 3-3-3M3 12h12"
+                                />
+                            </svg>
+                            {{ post.likes || 0 }} Likes
+                        </button>
+                        <button class="flex items-center hover:text-indigo-600">
+                            <svg
+                                class="w-5 h-5 mr-1"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M8 10h.01M12 10h.01M16 10h.01M21 16v-5a2 2 0 00-2-2H5a2 2 0 00-2 2v5a2 2 0 002 2h3l4 4 4-4h3a2 2 0 002-2z"
+                                />
+                            </svg>
+                            {{ post.commentsCount || 0 }} Comments
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
     <!-- Friends Section -->
     <section class="bg-white rounded-lg shadow p-6">
