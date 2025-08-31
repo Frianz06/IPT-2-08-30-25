@@ -5,6 +5,8 @@ import { auth, db } from '@/config/firebaseConfig'
 import { onAuthStateChanged } from 'firebase/auth'
 import { onSnapshot, collection, query, where, orderBy, doc, getDoc } from 'firebase/firestore'
 import { formatDistanceToNow } from 'date-fns'
+import PostCard from '@/components/ui/posts/PostCard.vue'
+
 
 const authStore = useAuthStore()
 const isEditProfileShown = ref(false)
@@ -135,58 +137,53 @@ onUnmounted(() => {
             <div><span class="font-medium">Skills:</span> Python, C++, React</div>
         </div>
     </section>
-     <!-- Recent Posts -->
-    <section class="bg-white rounded-lg shadow p-6 space-y-6">
-        <h3 class="text-lg font-semibold">Recent Posts</h3>
+ <!-- Recent Posts -->
+<section class="bg-white rounded-lg shadow p-6 space-y-6">
+    <h3 class="text-lg font-semibold">Recent Posts</h3>
 
-        <!-- No posts -->
-        <div v-if="!posts.length" class="text-gray-500">No posts yet.</div>
+    <!-- No posts -->
+    <div v-if="!posts.length" class="text-gray-500">No posts yet.</div>
 
-        <!-- Post items -->
-        <div
-            v-for="post in posts"
-            :key="post.id"
-            class="border-t pt-4 first:border-t-0 first:pt-0"
-        >
-            <div class="flex items-start space-x-3">
-                <img
-                    :src="post.user.photoURL || 'https://via.placeholder.com/64'"
-                    alt="Avatar"
-                    class="w-10 h-10 rounded-full"
-                />
+    <!-- Post items -->
+    <div
+        v-for="post in posts"
+        :key="post.id"
+        class="border-t pt-4 first:border-t-0 first:pt-0"
+    >
+        <div class="flex items-start space-x-3">
+            <img
+                :src="post.user.photoURL || 'https://via.placeholder.com/64'"
+                alt="Avatar"
+                class="w-10 h-10 rounded-full"
+            />
 
-                <div class="flex-1">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h4 class="font-semibold text-gray-800">
-                                {{ post.user.name || post.displayname || 'Unknown User' }}
-                            </h4>
-                            <span class="text-sm text-gray-500">
-                                Posted
-                                {{
-                                    formatDistanceToNow(post.createdAt?.toDate?.() || new Date(), {
-                                        addSuffix: true,
-                                    })
-                                }}
-                            </span>
-                        </div>
-                        <button class="text-gray-400 hover:text-gray-600">⋮</button>
+            <div class="flex-1">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h4 class="font-semibold text-gray-800">
+                            {{ post.user.firstName }} {{ post.user.lastName }}
+                        </h4>
+                        <span class="text-sm text-gray-500">
+                            Posted
+                            {{
+                                formatDistanceToNow(post.createdAt?.toDate?.() || new Date(), {
+                                    addSuffix: true,
+                                })
+                            }}
+                        </span>
                     </div>
-
-                    <p class="mt-2 text-gray-700">{{ post.content }}</p>
-
-                    <div class="mt-3 flex space-x-6 text-sm text-gray-600">
-                        <button class="flex items-center hover:text-indigo-600">
-                            👍 {{ post.likes || 0 }} Likes
-                        </button>
-                        <button class="flex items-center hover:text-indigo-600">
-                            💬 {{ post.commentsCount || 0 }} Comments
-                        </button>
-                    </div>
+                    <button class="text-gray-400 hover:text-gray-600">⋮</button>
                 </div>
+
+                <p class="mt-2 text-gray-700">{{ post.content }}</p>
+
+                <!-- 🔹 Replaced with PostCard -->
+                <PostCard :post="post" />
             </div>
         </div>
-    </section>
+    </div>
+</section>
+
 
     <!-- Friends Section -->
     <section class="bg-white rounded-lg shadow p-6">
