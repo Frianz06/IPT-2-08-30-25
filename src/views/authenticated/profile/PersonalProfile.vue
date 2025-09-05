@@ -176,9 +176,7 @@ onUnmounted(() => {
                 </div>
 
                 <p class="mt-2 text-gray-700">{{ post.content }}</p>
-
-                <!-- 🔹 Replaced with PostCard -->
-                <PostCard :post="post" />
+                
             </div>
         </div>
     </div>
